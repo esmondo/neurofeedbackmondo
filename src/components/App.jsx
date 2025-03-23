@@ -1,0 +1,1 @@
+import React from \"react\"; const App = () => { return ( <div style={{textAlign: \"center\", padding: \"50px\"}}><h1>NeuroFeedback Mondo</h1><p>A web-based application for brain signal visualization and neurofeedback using Muse headset.</p></div> ); }; export default App;
