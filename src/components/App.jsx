@@ -4,11 +4,9 @@ import styled from 'styled-components';
 import Header from './Header';
 import Dashboard from './Dashboard';
 import RawSignals from './visualizations/RawSignals';
-
-// Placeholder components for new pages
-const FrequencyBands = () => <div style={{ padding: '2rem' }}><h1>Frequency Bands Visualization</h1><p>Coming soon!</p></div>;
-const BrainMap = () => <div style={{ padding: '2rem' }}><h1>Brain Map Visualization</h1><p>Coming soon!</p></div>;
-const Neurofeedback = () => <div style={{ padding: '2rem' }}><h1>Neurofeedback Training</h1><p>Coming soon!</p></div>;
+import FrequencyBands from './visualizations/FrequencyBands';
+import BrainMap from './visualizations/BrainMap';
+import Neurofeedback from './visualizations/Neurofeedback';
 
 const AppContainer = styled.div`
   display: flex;

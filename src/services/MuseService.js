@@ -1,6 +1,7 @@
 import { MuseClient } from 'muse-js';
 import { BehaviorSubject, Subject } from 'rxjs';
 import { channelNames } from '../utils/constants';
+import fftService from './FFTService';
 
 class MuseService {
   constructor() {
@@ -24,6 +25,9 @@ class MuseService {
     this.telemetrySubject = new BehaviorSubject(null);
     this.telemetryData = this.telemetrySubject.asObservable();
     
+    // Link to FFT service for frequency band power
+    this.eegPower = fftService.eegPower;
+    
     // Are we using simulated data?
     this.simulationActive = false;
     this.simulationInterval = null;
@@ -41,7 +45,11 @@ class MuseService {
       // Subscribe to EEG readings
       this.muse.eegReadings.subscribe(reading => {
         if (this.eegReadings[channelNames[reading.electrode]]) {
+          // Forward to our observable
           this.eegReadings[channelNames[reading.electrode]].next(reading);
+          
+          // Send to FFT service for frequency analysis
+          fftService.addData(channelNames[reading.electrode], reading.samples);
         }
       });
       
@@ -52,6 +60,9 @@ class MuseService {
       
       // Start EEG data streaming
       await this.muse.start();
+      
+      // Start FFT analysis
+      fftService.start();
       
       return true;
     } catch (error) {
@@ -72,6 +83,9 @@ class MuseService {
     }
     
     try {
+      // Stop FFT analysis
+      fftService.stop();
+      
       await this.muse.disconnect();
       this.connected.next(false);
       console.log('Disconnected from Muse headset');
@@ -95,6 +109,9 @@ class MuseService {
       temperature: 28.5
     });
     
+    // Start FFT service for frequency band analysis
+    fftService.start();
+    
     // Simulate EEG data
     const sampleRate = 256; // Samples per second
     const updateInterval = 1000 / 10; // Update 10 times per second
@@ -111,23 +128,43 @@ class MuseService {
         for (let i = 0; i < samplesPerUpdate; i++) {
           // Simple sine wave with noise
           const sampleTime = time + i / sampleRate;
-          const frequency = 10; // 10 Hz (alpha wave)
-          const amplitude = 50 + Math.random() * 20;
           
-          // Base sine wave
-          let sample = amplitude * Math.sin(2 * Math.PI * frequency * sampleTime);
+          // Create a complex wave with multiple frequencies
+          // to better simulate real EEG with different bands
+          
+          // Delta wave (3 Hz)
+          const delta = 40 * Math.sin(2 * Math.PI * 3 * sampleTime);
+          
+          // Theta wave (6 Hz)
+          const theta = 20 * Math.sin(2 * Math.PI * 6 * sampleTime);
+          
+          // Alpha wave (10 Hz)
+          const alpha = 30 * Math.sin(2 * Math.PI * 10 * sampleTime);
+          
+          // Beta wave (20 Hz)
+          const beta = 15 * Math.sin(2 * Math.PI * 20 * sampleTime);
+          
+          // Gamma wave (40 Hz)
+          const gamma = 10 * Math.sin(2 * Math.PI * 40 * sampleTime);
+          
+          // Combine waves
+          let sample = delta + theta + alpha + beta + gamma;
           
           // Add noise
-          sample += (Math.random() * 2 - 1) * 30;
+          sample += (Math.random() * 2 - 1) * 15;
           
           samples.push(sample);
         }
         
+        // Send to our observable
         this.eegReadings[channel].next({
           electrode: index,
           timestamp: Date.now(),
           samples: samples
         });
+        
+        // Send to FFT service for frequency analysis
+        fftService.addData(channel, samples);
       });
       
       time += samplesPerUpdate / sampleRate;
@@ -143,6 +180,9 @@ class MuseService {
     this.simulationInterval = null;
     this.simulationActive = false;
     this.connected.next(false);
+    
+    // Stop FFT analysis
+    fftService.stop();
     
     console.log('Simulation stopped');
   }

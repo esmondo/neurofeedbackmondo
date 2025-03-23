@@ -3,11 +3,11 @@ export const channelNames = ['TP9', 'AF7', 'AF8', 'TP10'];
 
 // Frequency bands definitions (Hz)
 export const frequencyBands = {
-  delta: [1, 4],
-  theta: [4, 8],
-  alpha: [8, 13],
-  beta: [13, 30],
-  gamma: [30, 50]
+  delta: { min: 1, max: 4 },
+  theta: { min: 4, max: 8 },
+  alpha: { min: 8, max: 13 },
+  beta: { min: 13, max: 30 },
+  gamma: { min: 30, max: 50 }
 };
 
 // Color scheme for frequency bands

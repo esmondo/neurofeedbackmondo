@@ -25,6 +25,7 @@ const SessionTypeButton = styled.button`
   background-color: white;
   cursor: pointer;
   transition: all 0.2s ease;
+  color: #1f2937;
   
   &:hover {
     background-color: #f9fafb;
@@ -34,6 +35,7 @@ const SessionTypeButton = styled.button`
   &.active {
     border-color: #2563eb;
     background-color: #eff6ff;
+    color: #2563eb;
   }
 `;
 
@@ -147,11 +149,30 @@ const Tooltip = styled.div`
   }
 `;
 
+const SessionInfo = styled.div`
+  margin-top: 1rem;
+  padding: 0.75rem;
+  background-color: #f3f4f6;
+  border-radius: 0.375rem;
+  
+  p {
+    margin: 0.25rem 0;
+    font-size: 0.875rem;
+    color: #1f2937;
+  }
+  
+  .label {
+    font-weight: 500;
+    color: #4b5563;
+  }
+`;
+
 const SessionPanel = ({ connected, onSessionStart }) => {
   const [selectedSessionType, setSelectedSessionType] = useState(null);
   const [sessionActive, setSessionActive] = useState(false);
   const [sessionDuration, setSessionDuration] = useState(300); // 5 minutes in seconds
   const [timeRemaining, setTimeRemaining] = useState(sessionDuration);
+  const [sessionData, setSessionData] = useState(null);
   const timerRef = useRef(null);
   
   useEffect(() => {
@@ -174,6 +195,17 @@ const SessionPanel = ({ connected, onSessionStart }) => {
     setSessionActive(true);
     setTimeRemaining(sessionDuration);
     
+    // Create session data
+    const session = {
+      id: Date.now().toString(),
+      type: selectedSessionType,
+      startTime: new Date(),
+      duration: sessionDuration,
+      data: {} // Will store EEG data recorded during the session
+    };
+    setSessionData(session);
+    
+    // Start the timer
     timerRef.current = setInterval(() => {
       setTimeRemaining(prev => {
         if (prev <= 1) {
@@ -187,19 +219,41 @@ const SessionPanel = ({ connected, onSessionStart }) => {
     if (onSessionStart) {
       onSessionStart(selectedSessionType, sessionDuration);
     }
+    
+    // Start recording EEG data (to be implemented)
+    // recordSessionData(session.id);
   };
   
   const endSession = () => {
     if (timerRef.current) {
       clearInterval(timerRef.current);
     }
+    
+    if (sessionData) {
+      // Save session data (could be stored in local storage or a database)
+      console.log('Session completed:', {
+        ...sessionData,
+        endTime: new Date(),
+        actualDuration: sessionDuration - timeRemaining
+      });
+      
+      // Stop recording EEG data
+      // stopRecordingData();
+    }
+    
     setSessionActive(false);
+    setSessionData(null);
   };
   
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+  
+  const getSessionTypeName = (id) => {
+    const sessionType = sessionTypes.find(type => type.id === id);
+    return sessionType ? sessionType.name : 'Unknown';
   };
   
   return (
@@ -218,6 +272,14 @@ const SessionPanel = ({ connected, onSessionStart }) => {
             <div className="time">{formatTime(timeRemaining)}</div>
             <div className="label">Time Remaining</div>
           </SessionTimer>
+          
+          {sessionData && (
+            <SessionInfo>
+              <p><span className="label">Session Type:</span> {getSessionTypeName(sessionData.type)}</p>
+              <p><span className="label">Started at:</span> {sessionData.startTime.toLocaleTimeString()}</p>
+              <p><span className="label">Status:</span> Recording data...</p>
+            </SessionInfo>
+          )}
           
           <SessionButton 
             isActive={true}

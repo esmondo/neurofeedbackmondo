@@ -39,9 +39,15 @@ const Header = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
+  
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
 `;
 
-const FrequencyBandsTitle = styled.h2`
+const PageTitle = styled.h2`
   margin: 0;
 `;
 
@@ -49,20 +55,27 @@ const ControlsContainer = styled.div`
   display: flex;
   gap: 1rem;
   align-items: center;
+  
+  @media (max-width: 768px) {
+    width: 100%;
+    flex-wrap: wrap;
+  }
 `;
 
 const ViewSelector = styled.div`
   display: flex;
   gap: 0.5rem;
   
+  @media (max-width: 768px) {
+    width: 100%;
+  }
+  
   button {
-    background-color: ${props => props.active ? 'var(--primary)' : 'white'};
-    color: ${props => props.active ? 'white' : 'var(--dark)'};
-    border: 1px solid ${props => props.active ? 'var(--primary)' : 'var(--gray-light)'};
-    
-    &:hover {
-      background-color: ${props => props.active ? 'var(--primary-dark)' : 'var(--gray-light)'};
-    }
+    padding: 0.5rem 1rem;
+    border-radius: 0.375rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
   }
 `;
 
@@ -75,8 +88,8 @@ const ChartContainer = styled.div`
 `;
 
 const BandInfoContainer = styled.div`
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 1.5rem;
   margin-top: 1.5rem;
 `;
@@ -100,12 +113,186 @@ const BandName = styled.h3`
 const BandDescription = styled.p`
   margin-bottom: 1rem;
   font-size: 0.9rem;
-  color: var(--gray);
+  color: #6b7280;
 `;
 
 const BandValue = styled.div`
   font-size: 1.5rem;
   font-weight: 500;
+`;
+
+const ChannelSelector = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  
+  label {
+    font-size: 0.875rem;
+    color: #6b7280;
+  }
+
+  select {
+    padding: 0.5rem;
+    border-radius: 0.375rem;
+    border: 1px solid #e5e7eb;
+    background-color: white;
+    font-size: 0.875rem;
+  }
+`;
+
+const AmplitudeControl = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  
+  label {
+    font-size: 0.875rem;
+    color: #6b7280;
+  }
+
+  input {
+    width: 80px;
+    padding: 0.5rem;
+    border-radius: 0.375rem;
+    border: 1px solid #e5e7eb;
+    background-color: white;
+    font-size: 0.875rem;
+  }
+`;
+
+const SmoothingControl = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  
+  label {
+    font-size: 0.875rem;
+    color: #6b7280;
+  }
+
+  select {
+    padding: 0.5rem;
+    border-radius: 0.375rem;
+    border: 1px solid #e5e7eb;
+    background-color: white;
+    font-size: 0.875rem;
+  }
+`;
+
+const RangeSliderContainer = styled.div`
+  width: 100%;
+  max-width: 300px;
+  padding: 0 10px;
+  margin-top: 5px;
+`;
+
+const RangeSlider = styled.div`
+  position: relative;
+  height: 40px;
+`;
+
+const RangeTrack = styled.div`
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 4px;
+  width: 100%;
+  background-color: #e5e7eb;
+  border-radius: 2px;
+`;
+
+const RangeProgress = styled.div`
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 4px;
+  background-color: #2563eb;
+  border-radius: 2px;
+`;
+
+const RangeHandle = styled.div`
+  position: absolute;
+  top: 50%;
+  width: 16px;
+  height: 16px;
+  background-color: #2563eb;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  cursor: pointer;
+  
+  &:hover {
+    background-color: #1d4ed8;
+  }
+  
+  &:active {
+    width: 20px;
+    height: 20px;
+  }
+`;
+
+const RangeLabels = styled.div`
+  display: flex;
+  justify-content: space-between;
+  margin-top: 5px;
+  
+  span {
+    font-size: 0.75rem;
+    color: #6b7280;
+  }
+`;
+
+const FrequencyRangeControl = styled.div`
+  display: flex;
+  flex-direction: column;
+  margin-top: 10px;
+  width: 100%;
+  
+  label {
+    font-size: 0.875rem;
+    color: #6b7280;
+    margin-bottom: 5px;
+  }
+`;
+
+const TimeRangeControl = styled(FrequencyRangeControl)``;
+
+const PowerScaleControl = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  
+  label {
+    font-size: 0.875rem;
+    color: #6b7280;
+  }
+
+  input {
+    width: 80px;
+    padding: 0.5rem;
+    border-radius: 0.375rem;
+    border: 1px solid #e5e7eb;
+    background-color: white;
+    font-size: 0.875rem;
+  }
+`;
+
+const ScaleFactorControl = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  
+  label {
+    font-size: 0.875rem;
+    color: #6b7280;
+  }
+
+  select {
+    padding: 0.5rem;
+    border-radius: 0.375rem;
+    border: 1px solid #e5e7eb;
+    background-color: white;
+    font-size: 0.875rem;
+  }
 `;
 
 const NotConnectedMessage = styled.div`
@@ -118,6 +305,30 @@ const NotConnectedMessage = styled.div`
   padding: 3rem 1.5rem;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   text-align: center;
+  
+  h3 {
+    margin-top: 1rem;
+    margin-bottom: 0.5rem;
+  }
+
+  p {
+    color: #6b7280;
+    margin-bottom: 1.5rem;
+  }
+
+  button {
+    padding: 0.75rem 1.5rem;
+    background-color: #2563eb;
+    color: white;
+    border: none;
+    border-radius: 0.375rem;
+    font-weight: 500;
+    cursor: pointer;
+    
+    &:hover {
+      background-color: #1d4ed8;
+    }
+  }
 `;
 
 // Band descriptions
@@ -148,20 +359,28 @@ const FrequencyBands = () => {
   // Channel to display for spectrum and time views
   const [selectedChannel, setSelectedChannel] = useState('average');
   
-  // Bar chart data
-  const [barData, setBarData] = useState({
-    labels: Object.keys(frequencyBands),
-    datasets: [
-      {
-        label: 'Power',
-        data: [0, 0, 0, 0, 0],
-        backgroundColor: Object.values(bandColors),
-        borderWidth: 1,
-      },
-    ],
-  });
+  // Add scaling factor state to adjust power values
+  const [powerScaleFactor, setPowerScaleFactor] = useState(1000); // Default scaling factor
   
-  // Spectrum data (power by frequency)
+  // Add default visualization-specific power limits
+  const DEFAULT_BAR_LIMIT = 500;
+  const DEFAULT_SPECTRUM_LIMIT = 300;
+  const DEFAULT_TIME_LIMIT = 400;
+  
+  // Static amplitude for Y-axis (can be adjusted)
+  const [powerScaleLimit, setPowerScaleLimit] = useState(DEFAULT_BAR_LIMIT);
+  
+  // Smoothing factor for time series (0-100%)
+  const [smoothingFactor, setSmoothingFactor] = useState(50);
+  
+  // Frequency range for spectrum view (Hz)
+  const [frequencyRange, setFrequencyRange] = useState([1, 50]);
+  
+  // Time window for time series (seconds)
+  const [timeWindow, setTimeWindow] = useState([0, 60]);
+  const MAX_TIME_WINDOW = 60;
+  
+  // Current spectrum data for the selected channel
   const [spectrumData, setSpectrumData] = useState({
     labels: Array.from({length: 50}, (_, i) => i + 1), // 1-50 Hz
     datasets: [
@@ -184,10 +403,263 @@ const FrequencyBands = () => {
       data: Array(60).fill(0),
       borderColor: bandColors[band],
       backgroundColor: `${bandColors[band]}20`,
-      fill: false,
       tension: 0.4,
     })),
   });
+  
+  // Store historical power values for time series
+  const powerHistoryRef = React.useRef({
+    delta: Array(60).fill(0),
+    theta: Array(60).fill(0),
+    alpha: Array(60).fill(0),
+    beta: Array(60).fill(0),
+    gamma: Array(60).fill(0)
+  });
+  
+  // Store raw values before smoothing
+  const rawPowerHistoryRef = React.useRef({
+    delta: Array(60).fill(0),
+    theta: Array(60).fill(0),
+    alpha: Array(60).fill(0),
+    beta: Array(60).fill(0),
+    gamma: Array(60).fill(0)
+  });
+  
+  // Apply exponential smoothing to a value
+  const smoothValue = (newValue, prevValue, factor) => {
+    const alpha = factor / 100; // Convert 0-100% to 0-1
+    return alpha * newValue + (1 - alpha) * prevValue;
+  };
+  
+  // Handle frequency range changes
+  const handleFrequencyRangeChange = (newRange) => {
+    setFrequencyRange(newRange);
+    
+    // Filter spectrum data to show only the selected frequency range
+    const filteredLabels = spectrumData.labels.filter(label => 
+      label >= newRange[0] && label <= newRange[1]
+    );
+    
+    const filteredData = spectrumData.datasets[0].data.filter((_, i) => 
+      (i + 1) >= newRange[0] && (i + 1) <= newRange[1]
+    );
+    
+    setFilteredSpectrumData({
+      labels: filteredLabels,
+      datasets: [
+        {
+          ...spectrumData.datasets[0],
+          data: filteredData
+        }
+      ]
+    });
+  };
+  
+  // Handle time window changes
+  const handleTimeWindowChange = (newWindow) => {
+    setTimeWindow(newWindow);
+    
+    // Calculate the indices for the time window
+    const startIndex = Math.max(0, powerHistoryRef.current.delta.length - (MAX_TIME_WINDOW - newWindow[0]));
+    const endIndex = powerHistoryRef.current.delta.length - (MAX_TIME_WINDOW - newWindow[1]);
+    
+    // Update time series data with the selected time window
+    setFilteredTimeSeriesData({
+      labels: Array(newWindow[1] - newWindow[0]).fill(''),
+      datasets: Object.keys(frequencyBands).map(band => {
+        const timeData = powerHistoryRef.current[band].slice(startIndex, endIndex);
+        return {
+          label: band.charAt(0).toUpperCase() + band.slice(1),
+          data: timeData.map(val => Math.min(val, powerScaleLimit)),
+          borderColor: bandColors[band],
+          backgroundColor: `${bandColors[band]}20`,
+          tension: 0.4,
+        };
+      }),
+    });
+  };
+  
+  // Filtered spectrum data based on frequency range
+  const [filteredSpectrumData, setFilteredSpectrumData] = useState({
+    labels: Array.from({length: 50}, (_, i) => i + 1), // 1-50 Hz
+    datasets: [
+      {
+        label: 'Power Spectrum',
+        data: Array(50).fill(0),
+        borderColor: 'rgba(54, 162, 235, 1)',
+        backgroundColor: 'rgba(54, 162, 235, 0.2)',
+        fill: true,
+        tension: 0.4,
+      },
+    ],
+  });
+  
+  // Filtered time series data based on time window
+  const [filteredTimeSeriesData, setFilteredTimeSeriesData] = useState({
+    labels: Array(60).fill(''),
+    datasets: Object.keys(frequencyBands).map(band => ({
+      label: band.charAt(0).toUpperCase() + band.slice(1),
+      data: Array(60).fill(0),
+      borderColor: bandColors[band],
+      backgroundColor: `${bandColors[band]}20`,
+      tension: 0.4,
+    })),
+  });
+  
+  // Range slider components
+  const FrequencyRangeSlider = () => {
+    const minVal = 1;
+    const maxVal = 50;
+    const rangeWidth = 300; // Width of the slider in pixels
+    
+    // Calculate handle positions
+    const leftHandlePos = (frequencyRange[0] - minVal) / (maxVal - minVal) * 100;
+    const rightHandlePos = (frequencyRange[1] - minVal) / (maxVal - minVal) * 100;
+    
+    // Create refs for the slider container
+    const sliderRef = React.useRef(null);
+    
+    // Handle drag events
+    const createDragHandler = (isLeft) => {
+      let containerRect = null;
+      
+      const moveHandler = (moveEvent) => {
+        if (!containerRect) return;
+        
+        const pos = (moveEvent.clientX - containerRect.left) / containerRect.width;
+        let newVal = Math.round(pos * (maxVal - minVal) + minVal);
+        newVal = Math.max(minVal, Math.min(maxVal, newVal));
+        
+        if (isLeft) {
+          if (newVal < frequencyRange[1]) {
+            handleFrequencyRangeChange([newVal, frequencyRange[1]]);
+          }
+        } else {
+          if (newVal > frequencyRange[0]) {
+            handleFrequencyRangeChange([frequencyRange[0], newVal]);
+          }
+        }
+      };
+      
+      const upHandler = () => {
+        document.removeEventListener('mousemove', moveHandler);
+        document.removeEventListener('mouseup', upHandler);
+        containerRect = null;
+      };
+      
+      return (e) => {
+        // Store the container rect at the start of drag
+        if (sliderRef.current) {
+          containerRect = sliderRef.current.getBoundingClientRect();
+          document.addEventListener('mousemove', moveHandler);
+          document.addEventListener('mouseup', upHandler);
+        }
+      };
+    };
+    
+    return (
+      <RangeSliderContainer>
+        <RangeSlider ref={sliderRef}>
+          <RangeTrack />
+          <RangeProgress 
+            style={{
+              left: `${leftHandlePos}%`,
+              width: `${rightHandlePos - leftHandlePos}%`
+            }}
+          />
+          <RangeHandle 
+            style={{ left: `${leftHandlePos}%` }}
+            onMouseDown={createDragHandler(true)}
+          />
+          <RangeHandle 
+            style={{ left: `${rightHandlePos}%` }}
+            onMouseDown={createDragHandler(false)}
+          />
+        </RangeSlider>
+        <RangeLabels>
+          <span>{frequencyRange[0]} Hz</span>
+          <span>{frequencyRange[1]} Hz</span>
+        </RangeLabels>
+      </RangeSliderContainer>
+    );
+  };
+  
+  // Time slider component
+  const TimeRangeSlider = () => {
+    const minVal = 0;
+    const maxVal = MAX_TIME_WINDOW;
+    
+    // Calculate handle positions
+    const leftHandlePos = (timeWindow[0] - minVal) / (maxVal - minVal) * 100;
+    const rightHandlePos = (timeWindow[1] - minVal) / (maxVal - minVal) * 100;
+    
+    // Create refs for the slider container
+    const sliderRef = React.useRef(null);
+    
+    // Handle drag events with the same improved pattern
+    const createDragHandler = (isLeft) => {
+      let containerRect = null;
+      
+      const moveHandler = (moveEvent) => {
+        if (!containerRect) return;
+        
+        const pos = (moveEvent.clientX - containerRect.left) / containerRect.width;
+        let newVal = Math.round(pos * (maxVal - minVal) + minVal);
+        newVal = Math.max(minVal, Math.min(maxVal, newVal));
+        
+        if (isLeft) {
+          if (newVal < timeWindow[1]) {
+            handleTimeWindowChange([newVal, timeWindow[1]]);
+          }
+        } else {
+          if (newVal > timeWindow[0]) {
+            handleTimeWindowChange([timeWindow[0], newVal]);
+          }
+        }
+      };
+      
+      const upHandler = () => {
+        document.removeEventListener('mousemove', moveHandler);
+        document.removeEventListener('mouseup', upHandler);
+        containerRect = null;
+      };
+      
+      return (e) => {
+        // Store the container rect at the start of drag
+        if (sliderRef.current) {
+          containerRect = sliderRef.current.getBoundingClientRect();
+          document.addEventListener('mousemove', moveHandler);
+          document.addEventListener('mouseup', upHandler);
+        }
+      };
+    };
+    
+    return (
+      <RangeSliderContainer>
+        <RangeSlider ref={sliderRef}>
+          <RangeTrack />
+          <RangeProgress 
+            style={{
+              left: `${leftHandlePos}%`,
+              width: `${rightHandlePos - leftHandlePos}%`
+            }}
+          />
+          <RangeHandle 
+            style={{ left: `${leftHandlePos}%` }}
+            onMouseDown={createDragHandler(true)}
+          />
+          <RangeHandle 
+            style={{ left: `${rightHandlePos}%` }}
+            onMouseDown={createDragHandler(false)}
+          />
+        </RangeSlider>
+        <RangeLabels>
+          <span>{timeWindow[0]}s</span>
+          <span>{timeWindow[1]}s</span>
+        </RangeLabels>
+      </RangeSliderContainer>
+    );
+  };
   
   useEffect(() => {
     // Subscribe to connection status
@@ -197,79 +669,107 @@ const FrequencyBands = () => {
     
     // Subscribe to EEG power data
     const powerSubscription = museService.eegPower.subscribe(power => {
+      if (!power) return;
+      
       // Calculate average power across channels for each band
       const avgPower = {
-        delta: power.delta.reduce((a, b) => a + b, 0) / power.delta.length,
-        theta: power.theta.reduce((a, b) => a + b, 0) / power.theta.length,
-        alpha: power.alpha.reduce((a, b) => a + b, 0) / power.alpha.length,
-        beta: power.beta.reduce((a, b) => a + b, 0) / power.beta.length,
-        gamma: power.gamma.reduce((a, b) => a + b, 0) / power.gamma.length
+        delta: 0,
+        theta: 0,
+        alpha: 0,
+        beta: 0,
+        gamma: 0
       };
+      
+      // Process the data differently based on selected channel
+      if (selectedChannel === 'average') {
+        // Calculate average across all channels
+        Object.keys(frequencyBands).forEach(band => {
+          // Apply scaling factor to power values
+          avgPower[band] = (power[band].reduce((a, b) => a + b, 0) / power[band].length) * powerScaleFactor;
+        });
+      } else {
+        // Get data for the specific channel
+        const channelIndex = channelNames.indexOf(selectedChannel);
+        if (channelIndex !== -1) {
+          Object.keys(frequencyBands).forEach(band => {
+            // Apply scaling factor to power values
+            avgPower[band] = power[band][channelIndex] * powerScaleFactor;
+          });
+        }
+      }
       
       // Update current power values
       setPowerValues(avgPower);
       
-      // Update bar chart data
-      setBarData({
-        labels: Object.keys(frequencyBands).map(band => band.charAt(0).toUpperCase() + band.slice(1)),
-        datasets: [
-          {
-            label: 'Power',
-            data: Object.values(avgPower),
-            backgroundColor: Object.values(bandColors),
-            borderWidth: 1,
-          },
-        ],
+      // Update raw history first
+      Object.keys(frequencyBands).forEach(band => {
+        rawPowerHistoryRef.current[band] = [
+          ...rawPowerHistoryRef.current[band].slice(1), 
+          avgPower[band]
+        ];
       });
       
-      // Update time series data
-      setTimeSeriesData(prev => {
-        const newData = {};
-        Object.keys(frequencyBands).forEach((band, i) => {
-          newData[i] = {
-            ...prev.datasets[i],
-            data: [...prev.datasets[i].data.slice(1), avgPower[band]]
-          };
-        });
+      // Apply smoothing based on smoothing factor
+      Object.keys(frequencyBands).forEach(band => {
+        const rawValues = rawPowerHistoryRef.current[band];
+        const lastSmoothedValue = powerHistoryRef.current[band][powerHistoryRef.current[band].length - 1];
+        const newSmoothedValue = smoothValue(avgPower[band], lastSmoothedValue, smoothingFactor);
         
-        return {
-          labels: [...prev.labels.slice(1), ''],
-          datasets: Object.values(newData)
-        };
+        powerHistoryRef.current[band] = [
+          ...powerHistoryRef.current[band].slice(1), 
+          newSmoothedValue
+        ];
       });
       
-      // Generate mock spectrum data
-      // In a real app, this would come from a proper FFT
-      // of the raw EEG signal
+      // Update time series data with power scale limit
+      setTimeSeriesData({
+        labels: Array(60).fill(''),
+        datasets: Object.keys(frequencyBands).map(band => ({
+          label: band.charAt(0).toUpperCase() + band.slice(1),
+          data: powerHistoryRef.current[band].map(val => Math.min(val, powerScaleLimit)),
+          borderColor: bandColors[band],
+          backgroundColor: `${bandColors[band]}20`,
+          tension: 0.4,
+        })),
+      });
+      
+      // Generate spectrum data
+      // This would come from a real FFT in a production app
+      // Here we're creating a simplified spectrum based on the band power
       const mockSpectrum = Array.from({length: 50}, (_, i) => {
-        // Create a semi-realistic looking spectrum based on the bands
+        const freq = i + 1; // 1-50 Hz
         let value = 0;
         
         // Delta (1-4 Hz)
-        if (i < 4) {
-          value = avgPower.delta * (0.7 + Math.random() * 0.6) * (4 - i) / 4;
+        if (freq >= 1 && freq <= 4) {
+          const position = (freq - 1) / 3; // 0 to 1 within the band
+          value = avgPower.delta * (1 - position) * (0.8 + Math.random() * 0.4);
         }
         // Theta (4-8 Hz)
-        else if (i < 8) {
-          value = avgPower.theta * (0.7 + Math.random() * 0.6) * (8 - i) / 4;
+        else if (freq > 4 && freq <= 8) {
+          const position = (freq - 4) / 4; // 0 to 1 within the band
+          value = avgPower.theta * (1 - position) * (0.7 + Math.random() * 0.4);
         }
         // Alpha (8-13 Hz)
-        else if (i < 13) {
-          value = avgPower.alpha * (0.7 + Math.random() * 0.6) * (13 - i) / 5;
+        else if (freq > 8 && freq <= 13) {
+          const position = (freq - 8) / 5; // 0 to 1 within the band
+          value = avgPower.alpha * (1 - position * 0.8) * (0.8 + Math.random() * 0.4);
         }
         // Beta (13-30 Hz)
-        else if (i < 30) {
-          value = avgPower.beta * (0.7 + Math.random() * 0.6) * (30 - i) / 17;
+        else if (freq > 13 && freq <= 30) {
+          const position = (freq - 13) / 17; // 0 to 1 within the band
+          value = avgPower.beta * (1 - position * 0.7) * (0.7 + Math.random() * 0.3);
         }
         // Gamma (30-50 Hz)
-        else {
-          value = avgPower.gamma * (0.7 + Math.random() * 0.6) * (50 - i) / 20;
+        else if (freq > 30 && freq <= 50) {
+          const position = (freq - 30) / 20; // 0 to 1 within the band
+          value = avgPower.gamma * (1 - position * 0.6) * (0.7 + Math.random() * 0.3);
         }
         
         return value;
       });
       
-      setSpectrumData({
+      const newSpectrumData = {
         labels: Array.from({length: 50}, (_, i) => i + 1),
         datasets: [
           {
@@ -281,14 +781,58 @@ const FrequencyBands = () => {
             tension: 0.4,
           },
         ],
-      });
+      };
+      
+      setSpectrumData(newSpectrumData);
+      
+      // Update filtered spectrum data based on current frequency range
+      handleFrequencyRangeChange(frequencyRange);
+      
+      // Update filtered time series data based on current time window
+      handleTimeWindowChange(timeWindow);
     });
     
     return () => {
       connectionSubscription.unsubscribe();
       powerSubscription.unsubscribe();
     };
-  }, []);
+  }, [selectedChannel, smoothingFactor, frequencyRange, timeWindow, powerScaleLimit, powerScaleFactor]); // Add dependencies
+  
+  // Update limit when changing visualization
+  useEffect(() => {
+    switch(viewMode) {
+      case 'bar':
+        setPowerScaleLimit(DEFAULT_BAR_LIMIT);
+        break;
+      case 'spectrum':
+        setPowerScaleLimit(DEFAULT_SPECTRUM_LIMIT);
+        break;
+      case 'time':
+        setPowerScaleLimit(DEFAULT_TIME_LIMIT);
+        break;
+    }
+  }, [viewMode]);
+  
+  // Helper function to convert power to dB (for future use)
+  const powerTodB = (power, reference = 1) => {
+    return 10 * Math.log10(power / reference);
+  };
+  
+  // Prepare bar chart data
+  const barData = {
+    labels: Object.keys(frequencyBands).map(band => {
+      const { min, max } = frequencyBands[band];
+      return `${band.charAt(0).toUpperCase() + band.slice(1)} (${min}-${max} Hz)`;
+    }),
+    datasets: [
+      {
+        label: 'Power',
+        data: Object.values(powerValues),
+        backgroundColor: Object.values(bandColors),
+        borderWidth: 1,
+      },
+    ],
+  };
   
   const barOptions = {
     responsive: true,
@@ -296,6 +840,7 @@ const FrequencyBands = () => {
     scales: {
       y: {
         beginAtZero: true,
+        max: powerScaleLimit,
         title: {
           display: true,
           text: 'Power (μV²)'
@@ -304,7 +849,7 @@ const FrequencyBands = () => {
       x: {
         title: {
           display: true,
-          text: 'Frequency Bands'
+          text: 'Frequency Bands (Hz)'
         }
       }
     },
@@ -324,6 +869,7 @@ const FrequencyBands = () => {
     scales: {
       y: {
         beginAtZero: true,
+        max: powerScaleLimit,
         title: {
           display: true,
           text: 'Power (μV²)'
@@ -343,6 +889,13 @@ const FrequencyBands = () => {
       title: {
         display: false,
       },
+      tooltip: {
+        callbacks: {
+          label: function(context) {
+            return `${context.parsed.y.toFixed(1)} μV² at ${context.parsed.x} Hz`;
+          }
+        }
+      }
     },
   };
   
@@ -352,13 +905,25 @@ const FrequencyBands = () => {
     scales: {
       y: {
         beginAtZero: true,
+        max: powerScaleLimit,
         title: {
           display: true,
           text: 'Power (μV²)'
         }
       },
       x: {
-        display: false,
+        display: true,
+        title: {
+          display: true,
+          text: 'Time (seconds)'
+        },
+        ticks: {
+          callback: function(value, index) {
+            // Only show some time labels for readability
+            const timeValue = timeWindow[0] + (index * ((timeWindow[1] - timeWindow[0]) / 10));
+            return index % 2 === 0 ? timeValue.toFixed(0) + 's' : '';
+          }
+        }
       }
     },
     plugins: {
@@ -368,42 +933,52 @@ const FrequencyBands = () => {
       title: {
         display: false,
       },
+      tooltip: {
+        callbacks: {
+          label: function(context) {
+            return `${context.dataset.label}: ${context.parsed.y.toFixed(1)} μV²`;
+          }
+        }
+      }
     },
+    animation: {
+      duration: 0 // Disable animations for smoother updates
+    }
   };
   
   return (
     <Container>
       <Header>
-        <FrequencyBandsTitle>Frequency Band Power</FrequencyBandsTitle>
+        <PageTitle>Frequency Band Power</PageTitle>
         
         <ControlsContainer>
           <ViewSelector>
             <button 
-              active={viewMode === 'bar'} 
               onClick={() => setViewMode('bar')}
               style={{
-                backgroundColor: viewMode === 'bar' ? 'var(--primary)' : 'white',
-                color: viewMode === 'bar' ? 'white' : 'var(--dark)'
+                backgroundColor: viewMode === 'bar' ? '#2563eb' : 'white',
+                color: viewMode === 'bar' ? 'white' : '#374151',
+                border: `1px solid ${viewMode === 'bar' ? '#2563eb' : '#e5e7eb'}`
               }}
             >
               Bar Chart
             </button>
             <button 
-              active={viewMode === 'spectrum'} 
               onClick={() => setViewMode('spectrum')}
               style={{
-                backgroundColor: viewMode === 'spectrum' ? 'var(--primary)' : 'white',
-                color: viewMode === 'spectrum' ? 'white' : 'var(--dark)'
+                backgroundColor: viewMode === 'spectrum' ? '#2563eb' : 'white',
+                color: viewMode === 'spectrum' ? 'white' : '#374151',
+                border: `1px solid ${viewMode === 'spectrum' ? '#2563eb' : '#e5e7eb'}`
               }}
             >
               Spectrum
             </button>
             <button 
-              active={viewMode === 'time'} 
               onClick={() => setViewMode('time')}
               style={{
-                backgroundColor: viewMode === 'time' ? 'var(--primary)' : 'white',
-                color: viewMode === 'time' ? 'white' : 'var(--dark)'
+                backgroundColor: viewMode === 'time' ? '#2563eb' : 'white',
+                color: viewMode === 'time' ? 'white' : '#374151',
+                border: `1px solid ${viewMode === 'time' ? '#2563eb' : '#e5e7eb'}`
               }}
             >
               Time Series
@@ -411,8 +986,8 @@ const FrequencyBands = () => {
           </ViewSelector>
           
           {(viewMode === 'spectrum' || viewMode === 'time') && (
-            <div>
-              <label style={{ marginRight: '0.5rem' }}>Channel:</label>
+            <ChannelSelector>
+              <label>Channel:</label>
               <select 
                 value={selectedChannel} 
                 onChange={e => setSelectedChannel(e.target.value)}
@@ -422,7 +997,64 @@ const FrequencyBands = () => {
                   <option key={channel} value={channel}>{channel}</option>
                 ))}
               </select>
-            </div>
+            </ChannelSelector>
+          )}
+          
+          <PowerScaleControl>
+            <label>Max Power (μV²):</label>
+            <input 
+              type="number"
+              min="10"
+              max="1000000"
+              step="10"
+              value={powerScaleLimit}
+              onChange={e => setPowerScaleLimit(Number(e.target.value))}
+            />
+          </PowerScaleControl>
+          
+          <ScaleFactorControl>
+            <label>Power Scale Factor:</label>
+            <select
+              value={powerScaleFactor}
+              onChange={e => setPowerScaleFactor(Number(e.target.value))}
+            >
+              <option value="1">None (x1)</option>
+              <option value="10">Low (x10)</option>
+              <option value="100">Medium (x100)</option>
+              <option value="1000">High (x1,000)</option>
+              <option value="10000">Very High (x10,000)</option>
+              <option value="100000">Ultra High (x100,000)</option>
+            </select>
+          </ScaleFactorControl>
+          
+          {viewMode === 'time' && (
+            <>
+              <SmoothingControl>
+                <label>Smoothing:</label>
+                <select
+                  value={smoothingFactor}
+                  onChange={e => setSmoothingFactor(Number(e.target.value))}
+                >
+                  <option value="0">None (0%)</option>
+                  <option value="25">Low (25%)</option>
+                  <option value="50">Medium (50%)</option>
+                  <option value="75">High (75%)</option>
+                  <option value="90">Very High (90%)</option>
+                </select>
+              </SmoothingControl>
+              
+              <TimeRangeControl>
+                <label>Time Window (seconds):</label>
+                <TimeRangeSlider />
+              </TimeRangeControl>
+            </>
+          )}
+          
+          {viewMode === 'spectrum' && (
+            <FrequencyRangeControl>
+              <label>Frequency Range (Hz):</label>
+              <FrequencyRangeSlider />
+            </FrequencyRangeControl>
           )}
         </ControlsContainer>
       </Header>
@@ -435,11 +1067,11 @@ const FrequencyBands = () => {
             )}
             
             {viewMode === 'spectrum' && (
-              <Line data={spectrumData} options={spectrumOptions} />
+              <Line data={filteredSpectrumData} options={spectrumOptions} />
             )}
             
             {viewMode === 'time' && (
-              <Line data={timeSeriesData} options={timeSeriesOptions} />
+              <Line data={filteredTimeSeriesData} options={timeSeriesOptions} />
             )}
           </ChartContainer>
           

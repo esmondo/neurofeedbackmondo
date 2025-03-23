@@ -160,7 +160,7 @@ const Tooltip = styled.div`
     border-radius: 6px;
     padding: 8px;
     position: absolute;
-    z-index: 1;
+    z-index: 100;
     bottom: 125%;
     left: 50%;
     transform: translateX(-50%);
@@ -170,6 +170,10 @@ const Tooltip = styled.div`
     font-weight: normal;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     pointer-events: none;
+    word-wrap: break-word;
+    white-space: normal;
+    max-width: 250px;
+    line-height: 1.4;
   }
   
   .tooltip-text::after {
@@ -483,12 +487,9 @@ const Dashboard = () => {
             <>
               <TelemetryInfo>
                 <div>
-                  <div className="value">{telemetry.battery}%</div>
+                  <div className="value">{telemetry && telemetry.battery ? 
+                    Math.round(telemetry.battery * 100) : 'N/A'}%</div>
                   <div className="label">Battery</div>
-                </div>
-                <div>
-                  <div className="value">{telemetry.temperature}°C</div>
-                  <div className="label">Temperature</div>
                 </div>
               </TelemetryInfo>
               

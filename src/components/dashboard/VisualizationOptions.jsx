@@ -184,7 +184,6 @@ const VisualizationOptions = ({ connected }) => {
             to={viz.path}
             style={{ 
               opacity: connected ? 1 : 0.6, 
-              pointerEvents: connected ? 'auto' : 'none',
               color: '#1f2937'
             }}
           >

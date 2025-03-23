@@ -25,10 +25,6 @@ ChartJS.register(
   Legend
 );
 
-// Constants
-const samplingRate = 256; // Hz
-const rawDisplaySeconds = 5; // Show 5 seconds of data
-
 const Container = styled.div`
   display: flex;
   flex-direction: column;
@@ -39,9 +35,15 @@ const Header = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
+  
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
 `;
 
-const RawSignalsTitle = styled.h2`
+const ChartTitle = styled.h2`
   margin: 0;
 `;
 
@@ -49,47 +51,108 @@ const ControlsContainer = styled.div`
   display: flex;
   gap: 1rem;
   align-items: center;
+  
+  @media (max-width: 768px) {
+    width: 100%;
+    flex-wrap: wrap;
+  }
 `;
 
-const ChannelContainer = styled.div`
+const ChartContainer = styled.div`
   background-color: white;
   border-radius: 8px;
   padding: 1.5rem;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  height: ${props => props.height || '500px'};
 `;
 
-const ChannelHeader = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1rem;
-`;
-
-const ChannelTitle = styled.h3`
-  margin: 0;
-  color: ${props => props.color};
-`;
-
-const FilterControls = styled.div`
-  display: flex;
+const SeparatedChartsContainer = styled.div`
+  display: grid;
+  grid-template-columns: 1fr;
   gap: 1rem;
 `;
 
-const FilterButton = styled.button`
-  background-color: ${props => props.active ? '#2563eb' : 'white'};
-  color: ${props => props.active ? 'white' : '#374151'};
-  border: 1px solid ${props => props.active ? '#2563eb' : '#e5e7eb'};
+const TimeScaleSelector = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  
+  .label {
+    font-size: 0.875rem;
+    color: #6b7280;
+  }
+  
+  .buttons {
+    display: flex;
+    gap: 0.5rem;
+  }
+  
+  button {
+    padding: 0.5rem 1rem;
+    border-radius: 0.375rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+`;
+
+const ViewToggle = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  
+  .label {
+    font-size: 0.875rem;
+    color: #6b7280;
+  }
+  
+  .toggle {
+    display: flex;
+    gap: 0.5rem;
+  }
+  
+  button {
+    padding: 0.5rem 1rem;
+    border-radius: 0.375rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+`;
+
+const ChannelToggleContainer = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1rem;
+`;
+
+const ChannelToggle = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   padding: 0.5rem 1rem;
   border-radius: 0.375rem;
   font-weight: 500;
   cursor: pointer;
+  transition: all 0.2s;
+  background-color: ${props => props.active ? props.color + '30' : 'white'};
+  color: ${props => props.active ? props.color : '#374151'};
+  border: 1px solid ${props => props.active ? props.color : '#e5e7eb'};
   
   &:hover {
-    background-color: ${props => props.active ? '#1d4ed8' : '#f9fafb'};
+    background-color: ${props => props.active ? props.color + '40' : '#f9fafb'};
+  }
+  
+  .color-indicator {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background-color: ${props => props.color};
   }
 `;
 
-const ScaleControls = styled.div`
+const AmplitudeControl = styled.div`
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -98,13 +161,9 @@ const ScaleControls = styled.div`
     font-size: 0.875rem;
     color: #6b7280;
   }
-
-  select {
-    padding: 0.5rem;
-    border-radius: 0.375rem;
-    border: 1px solid #e5e7eb;
-    background-color: white;
-    font-size: 0.875rem;
+  
+  input {
+    width: 150px;
   }
 `;
 
@@ -118,8 +177,8 @@ const NotConnectedMessage = styled.div`
   padding: 3rem 1.5rem;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   text-align: center;
-  margin-top: 2rem;
-
+  height: 500px;
+  
   h3 {
     margin-top: 1rem;
     margin-bottom: 0.5rem;
@@ -138,6 +197,10 @@ const NotConnectedMessage = styled.div`
     border-radius: 0.375rem;
     font-weight: 500;
     cursor: pointer;
+    
+    &:hover {
+      background-color: #1d4ed8;
+    }
   }
 `;
 
@@ -145,199 +208,147 @@ const RawSignals = () => {
   // Connection status
   const [connected, setConnected] = useState(false);
   
-  // Filter options
-  const [filter, setFilter] = useState('none'); // 'none', 'lowpass', 'highpass', 'bandpass'
+  // Time scale in seconds (default 5s)
+  const [timeScale, setTimeScale] = useState(5);
   
-  // Scale factor for visualization
-  const [scale, setScale] = useState(1.0);
+  // View mode: 'overlapped' or 'separated'
+  const [viewMode, setViewMode] = useState('overlapped');
   
-  // Store raw data for each channel
-  const [channelData, setChannelData] = useState(() => {
-    const initialData = {};
-    channelNames.forEach(channel => {
-      initialData[channel] = {
-        labels: Array(samplingRate * rawDisplaySeconds).fill(''),
-        datasets: [
-          {
-            label: channel,
-            data: Array(samplingRate * rawDisplaySeconds).fill(0),
-            borderColor: channelColors[channel],
-            borderWidth: 1.5,
-            pointRadius: 0,
-            tension: 0.2,
-          }
-        ]
-      };
+  // Number of data points to display based on time scale and sampling rate
+  const [dataPointCount, setDataPointCount] = useState(5 * 256); // 5 seconds * 256 Hz
+  
+  // Amplitude scale factor (for vertical zoom)
+  const [amplitudeScale, setAmplitudeScale] = useState(1.0);
+  
+  // Visible channels
+  const [visibleChannels, setVisibleChannels] = useState(
+    Object.fromEntries(channelNames.map(channel => [channel, true]))
+  );
+  
+  // EEG data buffers for each channel
+  const eegDataRef = useRef(
+    Object.fromEntries(channelNames.map(channel => [channel, []]))
+  );
+  
+  // Chart data
+  const [chartData, setChartData] = useState({
+    labels: Array(dataPointCount).fill(''),
+    datasets: channelNames.map((channel, index) => ({
+      label: channel,
+      data: Array(dataPointCount).fill(0),
+      borderColor: channelColors[channel],
+      backgroundColor: 'transparent',
+      pointRadius: 0,
+      borderWidth: 1.5,
+      tension: 0.2,
+      hidden: !visibleChannels[channel],
+    })),
+  });
+  
+  // Update data point count when time scale changes
+  useEffect(() => {
+    const samplingRate = 256; // Hz
+    const newDataPointCount = timeScale * samplingRate;
+    setDataPointCount(newDataPointCount);
+    
+    // Resize existing data buffers
+    Object.keys(eegDataRef.current).forEach(channel => {
+      const currentData = eegDataRef.current[channel];
+      if (currentData.length > newDataPointCount) {
+        // Truncate if buffer is larger than needed
+        eegDataRef.current[channel] = currentData.slice(-newDataPointCount);
+      } else {
+        // Pad with zeros if buffer is smaller than needed
+        eegDataRef.current[channel] = [
+          ...Array(newDataPointCount - currentData.length).fill(0),
+          ...currentData
+        ];
+      }
     });
-    return initialData;
-  });
-
-  // Store raw samples to allow reapplying filters
-  const rawSamplesRef = useRef({});
-  channelNames.forEach(channel => {
-    if (!rawSamplesRef.current[channel]) {
-      rawSamplesRef.current[channel] = Array(samplingRate * rawDisplaySeconds).fill(0);
-    }
-  });
+    
+    // Update chart data
+    updateChartData();
+  }, [timeScale]);
   
-  // Keep track of subscriptions
-  const subscriptionsRef = useRef([]);
+  // Helper function to update chart data from buffers
+  const updateChartData = () => {
+    setChartData({
+      labels: Array(dataPointCount).fill(''),
+      datasets: channelNames.map(channel => ({
+        label: channel,
+        data: eegDataRef.current[channel].slice(-dataPointCount),
+        borderColor: channelColors[channel],
+        backgroundColor: 'transparent',
+        pointRadius: 0,
+        borderWidth: 1.5,
+        tension: 0.2,
+        hidden: !visibleChannels[channel],
+      })),
+    });
+  };
   
+  // Toggle channel visibility
+  const toggleChannel = (channel) => {
+    setVisibleChannels(prev => ({
+      ...prev,
+      [channel]: !prev[channel]
+    }));
+  };
+  
+  // Subscribe to EEG data and connection status
   useEffect(() => {
     // Subscribe to connection status
     const connectionSubscription = museService.connectionStatus.subscribe(status => {
       setConnected(status);
     });
     
-    subscriptionsRef.current.push(connectionSubscription);
-    
-    return () => {
-      // Clean up all subscriptions
-      subscriptionsRef.current.forEach(sub => sub.unsubscribe());
-      subscriptionsRef.current = [];
-    };
-  }, []);
-  
-  // Set up data subscriptions when connection status changes
-  useEffect(() => {
-    if (connected) {
-      // Clear any existing data subscriptions
-      subscriptionsRef.current.forEach(sub => {
-        if (sub.name !== 'connectionStatus') {
-          sub.unsubscribe();
-        }
-      });
-      
-      // Subscribe to each channel's data
-      channelNames.forEach(channel => {
-        const subscription = museService.eegData[channel].subscribe(reading => {
-          if (reading && reading.samples) {
-            // Store raw samples for potential refiltering
-            const newRawSamples = reading.samples;
-            const prevRawSamples = rawSamplesRef.current[channel];
-            rawSamplesRef.current[channel] = [...prevRawSamples.slice(newRawSamples.length), ...newRawSamples];
-            
-            // Update filtered and scaled data
-            updateChannelData(channel, newRawSamples);
+    // Subscribe to EEG data for each channel
+    const channelSubscriptions = channelNames.map(channel => {
+      return museService.eegData[channel].subscribe(data => {
+        if (!data) return;
+        
+        // Update data buffer for this channel only
+        // Add new data points to the buffer
+        const samples = data.samples || [];
+        samples.forEach(sample => {
+          eegDataRef.current[channel].push(sample * amplitudeScale);
+          
+          // Keep buffer size limited to dataPointCount
+          if (eegDataRef.current[channel].length > dataPointCount) {
+            eegDataRef.current[channel].shift();
           }
         });
-        
-        subscription.name = channel;
-        subscriptionsRef.current.push(subscription);
       });
-    }
-  }, [connected]);
-
-  // Effect to reapply filters when filter type or scale changes
-  useEffect(() => {
-    if (connected) {
-      // Reapply filters to all channels
-      channelNames.forEach(channel => {
-        // Use the stored raw samples to reapply the filter
-        const reprocessedData = applyFilter(rawSamplesRef.current[channel], filter);
-        
-        // Update the channel data with newly filtered data
-        setChannelData(prevData => {
-          const prevDataset = prevData[channel].datasets[0];
-          
-          return {
-            ...prevData,
-            [channel]: {
-              ...prevData[channel],
-              datasets: [
-                {
-                  ...prevDataset,
-                  data: reprocessedData.map(sample => sample * scale)
-                }
-              ]
-            }
-          };
-        });
-      });
-    }
-  }, [filter, scale]); // Reapply when filter or scale changes
-  
-  // Update channel data with new samples
-  const updateChannelData = (channel, newSamples) => {
-    setChannelData(prevData => {
-      // Apply filtering if needed
-      const processedSamples = applyFilter(newSamples, filter);
-      
-      // Scale the samples
-      const scaledSamples = processedSamples.map(sample => sample * scale);
-      
-      // Get previous data and labels
-      const prevDataset = prevData[channel].datasets[0];
-      const prevSamples = prevDataset.data;
-      
-      // Create new data array by removing oldest samples and adding new ones
-      const newData = [...prevSamples.slice(newSamples.length), ...scaledSamples];
-      
-      return {
-        ...prevData,
-        [channel]: {
-          ...prevData[channel],
-          datasets: [
-            {
-              ...prevDataset,
-              data: newData
-            }
-          ]
-        }
-      };
     });
-  };
+    
+    // Update chart data at regular intervals
+    const updateInterval = setInterval(() => {
+      updateChartData();
+    }, 100); // Update 10 times per second
+    
+    return () => {
+      connectionSubscription.unsubscribe();
+      channelSubscriptions.forEach(subscription => subscription.unsubscribe());
+      clearInterval(updateInterval);
+    };
+  }, [dataPointCount, amplitudeScale]);
   
-  // Apply different filters to the EEG data
-  const applyFilter = (samples, filterType) => {
-    // Simple filtering implementation - in a real app you'd use more sophisticated methods
-    switch (filterType) {
-      case 'lowpass':
-        // Simple moving average filter (low-pass)
-        return samples.map((sample, i, arr) => {
-          if (i < 2) return sample;
-          return (arr[i] + arr[i-1] + arr[i-2]) / 3;
-        });
-        
-      case 'highpass':
-        // Simple high-pass filter (difference)
-        return samples.map((sample, i, arr) => {
-          if (i < 1) return sample;
-          return sample - arr[i-1];
-        });
-        
-      case 'bandpass':
-        // Combine low and high pass
-        const lowPassed = samples.map((sample, i, arr) => {
-          if (i < 2) return sample;
-          return (arr[i] + arr[i-1] + arr[i-2]) / 3;
-        });
-        
-        return lowPassed.map((sample, i, arr) => {
-          if (i < 1) return sample;
-          return sample - arr[i-1];
-        });
-        
-      case 'none':
-      default:
-        return samples;
-    }
-  };
-  
+  // Chart options for overlapped view
   const chartOptions = {
     responsive: true,
     maintainAspectRatio: false,
+    animation: false, // Disable animation for better performance
     scales: {
+      x: {
+        display: false,
+      },
       y: {
         title: {
           display: true,
           text: 'Amplitude (μV)'
         },
-        min: -500 * scale,
-        max: 500 * scale
-      },
-      x: {
-        display: false
+        min: -amplitudeScale * 100, // Adjust y-axis based on amplitude scale
+        max: amplitudeScale * 100,
       }
     },
     plugins: {
@@ -345,91 +356,157 @@ const RawSignals = () => {
         display: false,
       },
       tooltip: {
-        enabled: true, // Enable tooltips so they work properly
-        mode: 'index',
-        intersect: false,
-      },
-    },
-    animation: false,
-    elements: {
-      line: {
-        tension: 0.4
+        enabled: false, // Disable tooltips for better performance
       }
-    }
+    },
   };
   
-  const handleFilterChange = (newFilter) => {
-    setFilter(newFilter);
-  };
+  // Chart options for separated view (individual per channel)
+  const getChannelChartOptions = (channel) => ({
+    responsive: true,
+    maintainAspectRatio: false,
+    animation: false,
+    scales: {
+      x: {
+        display: false,
+      },
+      y: {
+        title: {
+          display: true,
+          text: `${channel} (μV)`
+        },
+        min: -amplitudeScale * 100,
+        max: amplitudeScale * 100,
+      }
+    },
+    plugins: {
+      legend: {
+        display: false,
+      },
+      tooltip: {
+        enabled: false,
+      }
+    },
+  });
   
-  const handleScaleChange = (e) => {
-    setScale(parseFloat(e.target.value));
-  };
-  
-  const navigateHome = () => {
-    window.location.href = '/';
-  };
+  // Get chart data for a single channel
+  const getSingleChannelData = (channel) => ({
+    labels: Array(dataPointCount).fill(''),
+    datasets: [{
+      label: channel,
+      data: eegDataRef.current[channel].slice(-dataPointCount),
+      borderColor: channelColors[channel],
+      backgroundColor: 'transparent',
+      pointRadius: 0,
+      borderWidth: 1.5,
+      tension: 0.2,
+    }],
+  });
   
   return (
     <Container>
       <Header>
-        <RawSignalsTitle>Raw EEG Signals</RawSignalsTitle>
+        <ChartTitle>Raw EEG Signals</ChartTitle>
         
         <ControlsContainer>
-          <FilterControls>
-            <FilterButton 
-              active={filter === 'none'} 
-              onClick={() => handleFilterChange('none')}
-            >
-              Raw
-            </FilterButton>
-            <FilterButton 
-              active={filter === 'lowpass'} 
-              onClick={() => handleFilterChange('lowpass')}
-            >
-              Low Pass
-            </FilterButton>
-            <FilterButton 
-              active={filter === 'highpass'} 
-              onClick={() => handleFilterChange('highpass')}
-            >
-              High Pass
-            </FilterButton>
-            <FilterButton 
-              active={filter === 'bandpass'} 
-              onClick={() => handleFilterChange('bandpass')}
-            >
-              Band Pass
-            </FilterButton>
-          </FilterControls>
+          <TimeScaleSelector>
+            <div className="label">Time Window:</div>
+            <div className="buttons">
+              {[1, 2, 5, 10].map(scale => (
+                <button
+                  key={scale}
+                  onClick={() => setTimeScale(scale)}
+                  style={{
+                    backgroundColor: timeScale === scale ? '#2563eb' : 'white',
+                    color: timeScale === scale ? 'white' : '#374151',
+                    border: `1px solid ${timeScale === scale ? '#2563eb' : '#e5e7eb'}`
+                  }}
+                >
+                  {scale}s
+                </button>
+              ))}
+            </div>
+          </TimeScaleSelector>
           
-          <ScaleControls>
-            <label>Scale:</label>
-            <select value={scale} onChange={handleScaleChange}>
-              <option value="0.5">0.5x</option>
-              <option value="1">1x</option>
-              <option value="2">2x</option>
-              <option value="5">5x</option>
-              <option value="10">10x</option>
-            </select>
-          </ScaleControls>
+          <ViewToggle>
+            <div className="label">View Mode:</div>
+            <div className="toggle">
+              <button
+                onClick={() => setViewMode('overlapped')}
+                style={{
+                  backgroundColor: viewMode === 'overlapped' ? '#2563eb' : 'white',
+                  color: viewMode === 'overlapped' ? 'white' : '#374151',
+                  border: `1px solid ${viewMode === 'overlapped' ? '#2563eb' : '#e5e7eb'}`
+                }}
+              >
+                Overlapped
+              </button>
+              <button
+                onClick={() => setViewMode('separated')}
+                style={{
+                  backgroundColor: viewMode === 'separated' ? '#2563eb' : 'white',
+                  color: viewMode === 'separated' ? 'white' : '#374151',
+                  border: `1px solid ${viewMode === 'separated' ? '#2563eb' : '#e5e7eb'}`
+                }}
+              >
+                Separated
+              </button>
+            </div>
+          </ViewToggle>
+          
+          <AmplitudeControl>
+            <label>Amplitude:</label>
+            <input
+              type="range"
+              min="0.1"
+              max="5"
+              step="0.1"
+              value={amplitudeScale}
+              onChange={(e) => setAmplitudeScale(parseFloat(e.target.value))}
+            />
+            <span>{amplitudeScale.toFixed(1)}x</span>
+          </AmplitudeControl>
         </ControlsContainer>
       </Header>
       
       {connected ? (
-        channelNames.map(channel => (
-          <ChannelContainer key={channel}>
-            <ChannelHeader>
-              <ChannelTitle color={channelColors[channel]}>{channel}</ChannelTitle>
-            </ChannelHeader>
-            <div style={{ height: '150px' }}>
-              <Line 
-                data={channelData[channel]} 
-                options={chartOptions} 
-              />
-            </div>
-          </ChannelContainer>
-        ))
+        <>
+          {viewMode === 'overlapped' ? (
+            <ChartContainer>
+              <Line data={chartData} options={chartOptions} />
+            </ChartContainer>
+          ) : (
+            <SeparatedChartsContainer>
+              {channelNames.map(channel => (
+                visibleChannels[channel] && (
+                  <ChartContainer key={channel} height="200px">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                      <strong style={{ color: channelColors[channel] }}>{channel}</strong>
+                    </div>
+                    <Line 
+                      data={getSingleChannelData(channel)} 
+                      options={getChannelChartOptions(channel)} 
+                    />
+                  </ChartContainer>
+                )
+              ))}
+            </SeparatedChartsContainer>
+          )}
+          
+          <ChannelToggleContainer>
+            {channelNames.map(channel => (
+              <ChannelToggle
+                key={channel}
+                color={channelColors[channel]}
+                active={visibleChannels[channel]}
+                onClick={() => toggleChannel(channel)}
+              >
+                <div className="color-indicator" />
+                {channel}
+              </ChannelToggle>
+            ))}
+          </ChannelToggleContainer>
+        </>
       ) : (
         <NotConnectedMessage>
           <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -438,7 +515,7 @@ const RawSignals = () => {
           </svg>
           <h3>Not Connected to Muse</h3>
           <p>Please connect to your Muse headset from the dashboard to view raw EEG signals.</p>
-          <button onClick={navigateHome}>
+          <button onClick={() => window.location.href = '/'}>
             Go to Dashboard
           </button>
         </NotConnectedMessage>
