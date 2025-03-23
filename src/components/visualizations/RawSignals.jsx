@@ -171,6 +171,14 @@ const RawSignals = () => {
     });
     return initialData;
   });
+
+  // Store raw samples to allow reapplying filters
+  const rawSamplesRef = useRef({});
+  channelNames.forEach(channel => {
+    if (!rawSamplesRef.current[channel]) {
+      rawSamplesRef.current[channel] = Array(samplingRate * rawDisplaySeconds).fill(0);
+    }
+  });
   
   // Keep track of subscriptions
   const subscriptionsRef = useRef([]);
@@ -204,7 +212,13 @@ const RawSignals = () => {
       channelNames.forEach(channel => {
         const subscription = museService.eegData[channel].subscribe(reading => {
           if (reading && reading.samples) {
-            updateChannelData(channel, reading.samples);
+            // Store raw samples for potential refiltering
+            const newRawSamples = reading.samples;
+            const prevRawSamples = rawSamplesRef.current[channel];
+            rawSamplesRef.current[channel] = [...prevRawSamples.slice(newRawSamples.length), ...newRawSamples];
+            
+            // Update filtered and scaled data
+            updateChannelData(channel, newRawSamples);
           }
         });
         
@@ -213,6 +227,35 @@ const RawSignals = () => {
       });
     }
   }, [connected]);
+
+  // Effect to reapply filters when filter type or scale changes
+  useEffect(() => {
+    if (connected) {
+      // Reapply filters to all channels
+      channelNames.forEach(channel => {
+        // Use the stored raw samples to reapply the filter
+        const reprocessedData = applyFilter(rawSamplesRef.current[channel], filter);
+        
+        // Update the channel data with newly filtered data
+        setChannelData(prevData => {
+          const prevDataset = prevData[channel].datasets[0];
+          
+          return {
+            ...prevData,
+            [channel]: {
+              ...prevData[channel],
+              datasets: [
+                {
+                  ...prevDataset,
+                  data: reprocessedData.map(sample => sample * scale)
+                }
+              ]
+            }
+          };
+        });
+      });
+    }
+  }, [filter, scale]); // Reapply when filter or scale changes
   
   // Update channel data with new samples
   const updateChannelData = (channel, newSamples) => {
@@ -302,7 +345,9 @@ const RawSignals = () => {
         display: false,
       },
       tooltip: {
-        enabled: false,
+        enabled: true, // Enable tooltips so they work properly
+        mode: 'index',
+        intersect: false,
       },
     },
     animation: false,

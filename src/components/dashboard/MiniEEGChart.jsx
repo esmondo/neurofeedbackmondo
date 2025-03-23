@@ -102,7 +102,32 @@ const MiniEEGChart = ({ connected }) => {
         }
       },
       tooltip: {
-        enabled: false
+        enabled: true,
+        position: 'nearest',
+        mode: 'index',
+        intersect: false,
+        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+        padding: 10,
+        cornerRadius: 4,
+        titleFont: {
+          size: 12
+        },
+        bodyFont: {
+          size: 11
+        },
+        displayColors: true,
+        boxWidth: 8,
+        boxHeight: 8,
+        callbacks: {
+          // Custom tooltip formatter to prevent cut-off
+          title: function(tooltipItems) {
+            return 'Channel Values';
+          },
+          label: function(context) {
+            const label = context.dataset.label || '';
+            return `${label}: ${context.parsed.y.toFixed(1)} μV`;
+          }
+        }
       }
     },
     scales: {

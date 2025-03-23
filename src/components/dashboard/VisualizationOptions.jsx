@@ -182,11 +182,15 @@ const VisualizationOptions = ({ connected }) => {
           <VisualizationButton 
             key={viz.id} 
             to={viz.path}
-            style={{ opacity: connected ? 1 : 0.6, pointerEvents: connected ? 'auto' : 'none' }}
+            style={{ 
+              opacity: connected ? 1 : 0.6, 
+              pointerEvents: connected ? 'auto' : 'none',
+              color: '#1f2937'
+            }}
           >
             <div className="icon">{viz.icon}</div>
             <div className="title">{viz.title}</div>
-            <div className="description">{viz.description}</div>
+            <div className="description" style={{ color: '#6b7280' }}>{viz.description}</div>
           </VisualizationButton>
         ))}
       </OptionsGrid>
