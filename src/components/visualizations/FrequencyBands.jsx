@@ -295,6 +295,128 @@ const ScaleFactorControl = styled.div`
   }
 `;
 
+const UnitSelector = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  
+  label {
+    font-size: 0.875rem;
+    color: #6b7280;
+  }
+
+  select {
+    padding: 0.5rem;
+    border-radius: 0.375rem;
+    border: 1px solid #e5e7eb;
+    background-color: white;
+    font-size: 0.875rem;
+  }
+`;
+
+const DevicePresetSelector = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  
+  label {
+    font-size: 0.875rem;
+    color: #6b7280;
+  }
+
+  select {
+    padding: 0.5rem;
+    border-radius: 0.375rem;
+    border: 1px solid #e5e7eb;
+    background-color: white;
+    font-size: 0.875rem;
+  }
+`;
+
+const AutoScaleButton = styled.button`
+  padding: 0.5rem 1rem;
+  background-color: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 0.375rem;
+  font-weight: 500;
+  cursor: pointer;
+  font-size: 0.875rem;
+  
+  &:hover {
+    background-color: #1d4ed8;
+  }
+`;
+
+const AdvancedSettingsToggle = styled.button`
+  padding: 0.5rem 1rem;
+  background-color: white;
+  color: #374151;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.375rem;
+  font-weight: 500;
+  cursor: pointer;
+  font-size: 0.875rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  
+  &:hover {
+    background-color: #f9fafb;
+  }
+  
+  svg {
+    transition: transform 0.2s;
+    transform: ${props => props.isOpen ? 'rotate(180deg)' : 'rotate(0deg)'};
+  }
+`;
+
+const AdvancedSettings = styled.div`
+  background-color: #f9fafb;
+  border-radius: 0.375rem;
+  padding: 1rem;
+  margin-top: 1rem;
+  display: ${props => props.isOpen ? 'block' : 'none'};
+`;
+
+const BandScalingContainer = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-top: 0.5rem;
+`;
+
+const BandScalingControl = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  
+  label {
+    font-size: 0.875rem;
+    color: #6b7280;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    
+    span {
+      width: 12px;
+      height: 12px;
+      display: inline-block;
+      border-radius: 50%;
+      background-color: ${props => props.color};
+    }
+  }
+  
+  input {
+    width: 100%;
+    padding: 0.5rem;
+    border-radius: 0.375rem;
+    border: 1px solid #e5e7eb;
+    background-color: white;
+    font-size: 0.875rem;
+  }
+`;
+
 const NotConnectedMessage = styled.div`
   display: flex;
   flex-direction: column;
@@ -425,11 +547,163 @@ const FrequencyBands = () => {
     gamma: Array(60).fill(0)
   });
   
-  // Apply exponential smoothing to a value
-  const smoothValue = (newValue, prevValue, factor) => {
-    const alpha = factor / 100; // Convert 0-100% to 0-1
-    return alpha * newValue + (1 - alpha) * prevValue;
+  // Add unit selection (μV² or dB)
+  const [powerUnit, setPowerUnit] = useState('uv2'); // 'uv2' or 'db'
+  
+  // Add device preset selection
+  const [devicePreset, setDevicePreset] = useState('muse2');
+  
+  // Add advanced settings toggle
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  
+  // Add individual band scaling factors
+  const [bandScalingFactors, setBandScalingFactors] = useState({
+    delta: 1.0,
+    theta: 1.0,
+    alpha: 1.0,
+    beta: 1.0,
+    gamma: 1.0
+  });
+  
+  // Add auto-scaling state
+  const [isAutoScaling, setIsAutoScaling] = useState(false);
+  
+  // Add data buffers for auto-scaling
+  const powerBufferRef = React.useRef({
+    delta: [],
+    theta: [],
+    alpha: [],
+    beta: [],
+    gamma: []
+  });
+  
+  // Device presets for common EEG devices
+  const devicePresets = {
+    muse2: {
+      scaleFactor: 1000,
+      barLimit: 500,
+      spectrumLimit: 300,
+      timeLimit: 400
+    },
+    museS: {
+      scaleFactor: 1500,
+      barLimit: 750,
+      spectrumLimit: 450,
+      timeLimit: 600
+    },
+    emotiv: {
+      scaleFactor: 5000,
+      barLimit: 2500,
+      spectrumLimit: 1500,
+      timeLimit: 2000
+    },
+    openBCI: {
+      scaleFactor: 10000,
+      barLimit: 5000,
+      spectrumLimit: 3000,
+      timeLimit: 4000
+    },
+    custom: {
+      scaleFactor: powerScaleFactor,
+      barLimit: DEFAULT_BAR_LIMIT,
+      spectrumLimit: DEFAULT_SPECTRUM_LIMIT,
+      timeLimit: DEFAULT_TIME_LIMIT
+    }
   };
+  
+  // Reference value for dB conversion (1 μV² is common in EEG)
+  const DB_REFERENCE = 1.0;
+  
+  // Convert power to dB
+  const powerTodB = (power) => {
+    // Avoid log of 0 or negative numbers
+    if (power <= 0) return -100;
+    return 10 * Math.log10(power / DB_REFERENCE);
+  };
+  
+  // Apply device preset
+  useEffect(() => {
+    if (devicePreset === 'custom') return;
+    
+    const preset = devicePresets[devicePreset];
+    setPowerScaleFactor(preset.scaleFactor);
+    
+    // Update limits based on current view
+    switch(viewMode) {
+      case 'bar':
+        setPowerScaleLimit(preset.barLimit);
+        break;
+      case 'spectrum':
+        setPowerScaleLimit(preset.spectrumLimit);
+        break;
+      case 'time':
+        setPowerScaleLimit(preset.timeLimit);
+        break;
+    }
+  }, [devicePreset]);
+  
+  // Auto-scaling logic
+  const performAutoScaling = () => {
+    // Need at least 10 samples for meaningful auto-scaling
+    if (powerBufferRef.current.delta.length < 10) {
+      console.log("Not enough data for auto-scaling yet");
+      return;
+    }
+    
+    // Find max power across all bands
+    let maxPower = 0;
+    Object.keys(frequencyBands).forEach(band => {
+      const bandMax = Math.max(...powerBufferRef.current[band]);
+      if (bandMax > maxPower) maxPower = bandMax;
+    });
+    
+    // Calculate appropriate scale factor
+    // We want the max value to be about 80% of our display limit
+    const targetMaxValue = powerScaleLimit * 0.8;
+    const rawMaxValue = maxPower / powerScaleFactor; // Value without current scaling
+    const newScaleFactor = targetMaxValue / rawMaxValue;
+    
+    console.log(`Auto-scaling: Max power ${maxPower}, new scale factor ${newScaleFactor}`);
+    
+    // Update scale factor (clamped to reasonable values)
+    const clampedScaleFactor = Math.max(1, Math.min(1000000, Math.round(newScaleFactor)));
+    setPowerScaleFactor(clampedScaleFactor);
+    
+    // Update device preset to custom
+    setDevicePreset('custom');
+    
+    // Calculate individual band scaling factors
+    const newBandScalingFactors = {};
+    Object.keys(frequencyBands).forEach(band => {
+      const bandMax = Math.max(...powerBufferRef.current[band]);
+      if (bandMax > 0) {
+        const bandScaleFactor = (targetMaxValue / bandMax) * (maxPower / bandMax);
+        newBandScalingFactors[band] = Math.min(5.0, Math.max(0.2, bandScaleFactor / newScaleFactor));
+      } else {
+        newBandScalingFactors[band] = 1.0;
+      }
+    });
+    
+    setBandScalingFactors(newBandScalingFactors);
+  };
+  
+  // Update view mode limits based on device preset
+  useEffect(() => {
+    if (devicePreset === 'custom') return;
+    
+    const preset = devicePresets[devicePreset];
+    switch(viewMode) {
+      case 'bar':
+        setPowerScaleLimit(preset.barLimit);
+        break;
+      case 'spectrum':
+        setPowerScaleLimit(preset.spectrumLimit);
+        break;
+      case 'time':
+        setPowerScaleLimit(preset.timeLimit);
+        break;
+    }
+  }, [viewMode, devicePreset]);
   
   // Handle frequency range changes
   const handleFrequencyRangeChange = (newRange) => {
@@ -684,22 +958,45 @@ const FrequencyBands = () => {
       if (selectedChannel === 'average') {
         // Calculate average across all channels
         Object.keys(frequencyBands).forEach(band => {
-          // Apply scaling factor to power values
-          avgPower[band] = (power[band].reduce((a, b) => a + b, 0) / power[band].length) * powerScaleFactor;
+          // Apply scaling factor and band-specific scaling to power values
+          avgPower[band] = (power[band].reduce((a, b) => a + b, 0) / power[band].length) 
+                           * powerScaleFactor 
+                           * bandScalingFactors[band];
         });
       } else {
         // Get data for the specific channel
         const channelIndex = channelNames.indexOf(selectedChannel);
         if (channelIndex !== -1) {
           Object.keys(frequencyBands).forEach(band => {
-            // Apply scaling factor to power values
-            avgPower[band] = power[band][channelIndex] * powerScaleFactor;
+            // Apply scaling factor and band-specific scaling to power values
+            avgPower[band] = power[band][channelIndex] 
+                             * powerScaleFactor 
+                             * bandScalingFactors[band];
           });
         }
       }
       
+      // Store raw values in buffer for auto-scaling (before conversion to dB)
+      Object.keys(frequencyBands).forEach(band => {
+        // Keep buffer at 100 samples max
+        if (powerBufferRef.current[band].length >= 100) {
+          powerBufferRef.current[band].shift();
+        }
+        powerBufferRef.current[band].push(avgPower[band]);
+      });
+      
+      // Convert to dB if needed
+      const displayPower = {};
+      if (powerUnit === 'db') {
+        Object.keys(frequencyBands).forEach(band => {
+          displayPower[band] = powerTodB(avgPower[band]);
+        });
+      } else {
+        displayPower = {...avgPower};
+      }
+      
       // Update current power values
-      setPowerValues(avgPower);
+      setPowerValues(powerUnit === 'db' ? displayPower : avgPower);
       
       // Update raw history first
       Object.keys(frequencyBands).forEach(band => {
@@ -790,13 +1087,25 @@ const FrequencyBands = () => {
       
       // Update filtered time series data based on current time window
       handleTimeWindowChange(timeWindow);
+      
+      // Auto-scale if enabled and sufficient data is available
+      if (isAutoScaling && powerBufferRef.current.delta.length >= 60) {
+        performAutoScaling();
+        setIsAutoScaling(false); // Turn off auto-scaling after applying
+      }
     });
     
     return () => {
       connectionSubscription.unsubscribe();
       powerSubscription.unsubscribe();
     };
-  }, [selectedChannel, smoothingFactor, frequencyRange, timeWindow, powerScaleLimit, powerScaleFactor]); // Add dependencies
+  }, [selectedChannel, smoothingFactor, frequencyRange, timeWindow, powerScaleLimit, powerScaleFactor, bandScalingFactors, isAutoScaling]);
+  
+  // Apply exponential smoothing to a value
+  const smoothValue = (newValue, prevValue, factor) => {
+    const alpha = factor / 100; // Convert 0-100% to 0-1
+    return alpha * newValue + (1 - alpha) * prevValue;
+  };
   
   // Update limit when changing visualization
   useEffect(() => {
@@ -812,11 +1121,6 @@ const FrequencyBands = () => {
         break;
     }
   }, [viewMode]);
-  
-  // Helper function to convert power to dB (for future use)
-  const powerTodB = (power, reference = 1) => {
-    return 10 * Math.log10(power / reference);
-  };
   
   // Prepare bar chart data
   const barData = {
@@ -834,16 +1138,31 @@ const FrequencyBands = () => {
     ],
   };
   
+  // Update chart options based on power unit
+  const getYAxisTitle = () => {
+    return powerUnit === 'db' ? 'Power (dB)' : 'Power (μV²)';
+  };
+  
+  const getTooltipLabel = (value, unit, freq) => {
+    if (unit === 'db') {
+      return `${value.toFixed(1)} dB${freq ? ` at ${freq} Hz` : ''}`;
+    } else {
+      return `${value.toFixed(1)} μV²${freq ? ` at ${freq} Hz` : ''}`;
+    }
+  };
+  
+  // Update chart options
   const barOptions = {
     responsive: true,
     maintainAspectRatio: false,
     scales: {
       y: {
         beginAtZero: true,
-        max: powerScaleLimit,
+        max: powerUnit === 'db' ? 40 : powerScaleLimit, // dB scale typically -20 to 40
+        min: powerUnit === 'db' ? -20 : 0,
         title: {
           display: true,
-          text: 'Power (μV²)'
+          text: getYAxisTitle()
         }
       },
       x: {
@@ -868,11 +1187,12 @@ const FrequencyBands = () => {
     maintainAspectRatio: false,
     scales: {
       y: {
-        beginAtZero: true,
-        max: powerScaleLimit,
+        beginAtZero: powerUnit !== 'db',
+        max: powerUnit === 'db' ? 40 : powerScaleLimit,
+        min: powerUnit === 'db' ? -20 : 0,
         title: {
           display: true,
-          text: 'Power (μV²)'
+          text: getYAxisTitle()
         }
       },
       x: {
@@ -892,7 +1212,7 @@ const FrequencyBands = () => {
       tooltip: {
         callbacks: {
           label: function(context) {
-            return `${context.parsed.y.toFixed(1)} μV² at ${context.parsed.x} Hz`;
+            return getTooltipLabel(context.parsed.y, powerUnit, context.parsed.x);
           }
         }
       }
@@ -904,11 +1224,12 @@ const FrequencyBands = () => {
     maintainAspectRatio: false,
     scales: {
       y: {
-        beginAtZero: true,
-        max: powerScaleLimit,
+        beginAtZero: powerUnit !== 'db',
+        max: powerUnit === 'db' ? 40 : powerScaleLimit,
+        min: powerUnit === 'db' ? -20 : 0,
         title: {
           display: true,
-          text: 'Power (μV²)'
+          text: getYAxisTitle()
         }
       },
       x: {
@@ -936,7 +1257,7 @@ const FrequencyBands = () => {
       tooltip: {
         callbacks: {
           label: function(context) {
-            return `${context.dataset.label}: ${context.parsed.y.toFixed(1)} μV²`;
+            return getTooltipLabel(context.parsed.y, powerUnit, null);
           }
         }
       }
@@ -1000,32 +1321,80 @@ const FrequencyBands = () => {
             </ChannelSelector>
           )}
           
+          <DevicePresetSelector>
+            <label>Device:</label>
+            <select
+              value={devicePreset}
+              onChange={e => setDevicePreset(e.target.value)}
+            >
+              <option value="muse2">Muse 2</option>
+              <option value="museS">Muse S</option>
+              <option value="emotiv">Emotiv</option>
+              <option value="openBCI">OpenBCI</option>
+              <option value="custom">Custom</option>
+            </select>
+          </DevicePresetSelector>
+          
           <PowerScaleControl>
-            <label>Max Power (μV²):</label>
+            <label>Max Power:</label>
             <input 
               type="number"
               min="10"
               max="1000000"
               step="10"
               value={powerScaleLimit}
-              onChange={e => setPowerScaleLimit(Number(e.target.value))}
+              onChange={e => {
+                setPowerScaleLimit(Number(e.target.value));
+                setDevicePreset('custom'); // Switch to custom when manually changing
+              }}
             />
           </PowerScaleControl>
           
           <ScaleFactorControl>
-            <label>Power Scale Factor:</label>
+            <label>Scale Factor:</label>
             <select
               value={powerScaleFactor}
-              onChange={e => setPowerScaleFactor(Number(e.target.value))}
+              onChange={e => {
+                setPowerScaleFactor(Number(e.target.value));
+                setDevicePreset('custom'); // Switch to custom when manually changing
+              }}
             >
-              <option value="1">None (x1)</option>
-              <option value="10">Low (x10)</option>
-              <option value="100">Medium (x100)</option>
-              <option value="1000">High (x1,000)</option>
-              <option value="10000">Very High (x10,000)</option>
-              <option value="100000">Ultra High (x100,000)</option>
+              <option value="1">x1</option>
+              <option value="10">x10</option>
+              <option value="100">x100</option>
+              <option value="1000">x1,000</option>
+              <option value="10000">x10,000</option>
+              <option value="100000">x100,000</option>
             </select>
           </ScaleFactorControl>
+          
+          <UnitSelector>
+            <label>Unit:</label>
+            <select
+              value={powerUnit}
+              onChange={e => setPowerUnit(e.target.value)}
+            >
+              <option value="uv2">μV²</option>
+              <option value="db">dB</option>
+            </select>
+          </UnitSelector>
+          
+          <AutoScaleButton 
+            onClick={() => setIsAutoScaling(true)}
+            disabled={isAutoScaling}
+          >
+            Auto Scale
+          </AutoScaleButton>
+          
+          <AdvancedSettingsToggle 
+            isOpen={showAdvanced}
+            onClick={() => setShowAdvanced(!showAdvanced)}
+          >
+            Advanced
+            <svg width="12" height="12" viewBox="0 0 12 12" xmlns="http://www.w3.org/2000/svg">
+              <path d="M6 8L2 4h8L6 8z" fill="currentColor" />
+            </svg>
+          </AdvancedSettingsToggle>
           
           {viewMode === 'time' && (
             <>
@@ -1057,6 +1426,37 @@ const FrequencyBands = () => {
             </FrequencyRangeControl>
           )}
         </ControlsContainer>
+        
+        <AdvancedSettings isOpen={showAdvanced}>
+          <h3>Per-Band Scaling Factors</h3>
+          <p>Adjust the relative scaling of each frequency band:</p>
+          
+          <BandScalingContainer>
+            {Object.keys(frequencyBands).map(band => (
+              <BandScalingControl key={band} color={bandColors[band]}>
+                <label>
+                  <span style={{ backgroundColor: bandColors[band] }}></span>
+                  {band.charAt(0).toUpperCase() + band.slice(1)}
+                </label>
+                <input
+                  type="range"
+                  min="0.2"
+                  max="5"
+                  step="0.1"
+                  value={bandScalingFactors[band]}
+                  onChange={e => {
+                    const newFactors = {...bandScalingFactors};
+                    newFactors[band] = Number(e.target.value);
+                    setBandScalingFactors(newFactors);
+                  }}
+                />
+                <div style={{ textAlign: 'center' }}>
+                  {bandScalingFactors[band].toFixed(1)}x
+                </div>
+              </BandScalingControl>
+            ))}
+          </BandScalingContainer>
+        </AdvancedSettings>
       </Header>
       
       {connected ? (
@@ -1088,7 +1488,9 @@ const FrequencyBands = () => {
                   {bandDescriptions[band]}
                 </BandDescription>
                 <BandValue>
-                  {powerValues[band].toFixed(1)} μV²
+                  {powerUnit === 'db' 
+                    ? `${powerTodB(powerValues[band]).toFixed(1)} dB` 
+                    : `${powerValues[band].toFixed(1)} μV²`}
                 </BandValue>
               </BandCard>
             ))}
